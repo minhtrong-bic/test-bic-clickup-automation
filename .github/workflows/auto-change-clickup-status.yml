@@ -1,0 +1,22 @@
+on:
+  pull_request:
+    types:
+      - closed
+
+jobs:
+  hello_world_job:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    name: A job to say hello
+    steps:
+      - name: Hello world action step merge
+        id: hello
+        uses: minhtrong-bic/bic-clickup-automation@v1.0.0
+        with:
+          clickUpTaskIdReg: 'BEIN-\d+'
+          clickUpTeamId: ${{ secrets.CLICKUP_TEAM_ID }}
+          clickUpToken: ${{ secrets.CLICKUP_TOKEN }}
+          triggerPrefixes: [DEV,STG, RLS, PRD]
+      # Use the output from the `hello` step
+      - name: Get the output time
+        run: echo "The time was ${{ steps.hello.outputs.time }}"
