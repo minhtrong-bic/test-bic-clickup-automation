@@ -15,7 +15,7 @@ jobs:
           clickUpTaskIdReg: 'BEIN-\d+'
           clickUpTeamId: ${{ secrets.CLICKUP_TEAM_ID }}
           clickUpToken: ${{ secrets.CLICKUP_TOKEN }}
-          triggerPrefixes: [DEV,STG, RLS, PRD]
+          triggerPrefixes: 'DEV,STG, RLS, PRD'
       # Use the output from the `hello` step
       - name: Get the output time
         run: echo "The time was ${{ steps.hello.outputs.time }}"
