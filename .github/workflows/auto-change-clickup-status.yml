@@ -15,7 +15,17 @@ jobs:
           clickUpTaskIdReg: 'BEIN-\d+'
           clickUpTeamId: ${{ secrets.CLICKUP_TEAM_ID }}
           clickUpToken: ${{ secrets.CLICKUP_TOKEN }}
-          triggerPrefixes: [DEV,STG, RLS, PRD]
+          triggerPrefixes: DEV,STG,RLS,PRD
       # Use the output from the `hello` step
       - name: Get the output time
         run: echo "The time was ${{ steps.hello.outputs.time }}"
+  auto_creat_pr:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    name: A job to create PR
+    steps:
+      - name: Auto Create PR
+        id: hello
+        uses: minhtrong-bic/bic-pr-automation@1.0.0
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
