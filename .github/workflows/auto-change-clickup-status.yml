@@ -1,6 +1,6 @@
 on:
   pull_request:
-    types: [ closed ]
+    types: [ closed ]:
 
 jobs:
   auto_creat_pr:
@@ -9,7 +9,7 @@ jobs:
     name: A job to create PR
     steps:
       - name: Auto Create PR
-        id: hello
-        uses: minhtrong-bic/bic-pr-automation@1.0.0
+        id: auto_creat_pr
+        uses: minhtrong-bic/bic-pr-automation@1.0.1
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
