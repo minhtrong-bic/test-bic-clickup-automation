@@ -1,7 +1,6 @@
 on:
   pull_request:
-    types:
-      - closed
+    types: [ opened, synchronize, reopened ]
 
 jobs:
   hello_world_job:
@@ -11,7 +10,7 @@ jobs:
     steps:
       - name: Hello world action step merge
         id: hello
-        uses: minhtrong-bic/bic-clickup-automation@v1.0.0
+        uses: minhtrong-bic/bic-clickup-automation@v1.0.1
         with:
           clickUpTaskIdReg: 'BEIN-\d+'
           clickUpTeamId: ${{ secrets.CLICKUP_TEAM_ID }}
