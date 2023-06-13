@@ -70,7 +70,7 @@ jobs:
       - name: Create new PR
         run: |
           git checkout -b update-version-${{ env.new_version }}
-          git push origin HEAD
+          git push origin update-version-${{ env.new_version }}
           # Create the pull request using GitHub CLI
           gh pr create --title "Update version ${{ env.new_version }}" --base master --head update-version-${{ env.new_version }} --body "This pull request is auto-generated." --label auto
           echo "Update PR created."
