@@ -1,0 +1,46 @@
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - master
+jobs:
+  auto_release:
+    runs-on: ubuntu-latest
+    name: Auto Release
+    steps:
+      - name: Checkout Branch
+        uses: actions/checkout@v3
+#      - name: Install NodeJs
+#        uses: actions/setup-node@v3
+#        with:
+#          node-version: '16.17.1'
+#          cache: 'npm'
+      - name: Extract Semantic Scope
+        id: extract_scope
+        run: |
+          commit_message="${{ github.event.pull_request.title }}"
+          change_scope=$(echo "$commit_message" | sed -n 's/.*(\(.*\)):.*$/\1/p' | tr '[:upper:]' '[:lower:]')
+          if [[ ! change_scope =~ ^(major|minor|patch)$ ]]; then
+            change_scope="patch"
+          fi
+          echo "change_scope=$change_scope" >> $GITHUB_ENV
+          echo "::debug::Change scope: ${{ env.change_scope }}"
+      - name: Update package version
+        id: update_version
+        run: |
+          git config --global user.name $GITHUB_ACTOR
+          git config --global user.email "$GITHUB_ACTOR@users.noreply.github.com"
+          npm version ${{ env.change_scope }}
+          new_version=$(node -p "require('./package.json').version")
+          echo "new_version=$new_version" >> $GITHUB_ENV
+          echo "::debug::New version: ${{ env.new_version }}"
+      - name: Update sonar-project.properties
+        run: |
+          echo 
+          awk -v new_version="${{ env.new_version }}" '/^sonar.projectVersion/ { $0 = "sonar.projectVersion=" new_version } 1' sonar-project.properties > sonar-project.properties.tmp
+          mv sonar-project.properties.tmp sonar-project.properties
+          git add sonar-project.properties
+          git commit --amend --no-edit
+      - name: Push changes
+        run: git push origin HEAD
