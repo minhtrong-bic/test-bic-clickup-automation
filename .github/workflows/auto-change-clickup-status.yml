@@ -10,6 +10,6 @@ jobs:
     steps:
       - name: Auto Create PR
         id: auto_creat_pr
-        uses: minhtrong-bic/bic-pr-automation@1.0.1
+        uses: minhtrong-bic/bic-pr-automation@1.1.0
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
