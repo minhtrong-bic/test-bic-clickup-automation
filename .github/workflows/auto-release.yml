@@ -1,0 +1,50 @@
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - master
+jobs:
+  auto_release:
+    runs-on: ubuntu-latest
+    name: Auto Release
+    steps:
+      - name: Checkout Branch
+        uses: actions/checkout@v3
+      - name: Install NodeJs
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16.17.1'
+          cache: 'npm'
+      - name: Cache/Restore node modules
+        id: cache-node-modules
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+      - name: Extract Semantic Scope
+        id: extract_scope
+        run: |
+          commit_message="${{ github.event.pull_request.title }}"
+          scope=$(echo "$commit_message" | sed -n 's/.*(\(.*\)):.*$/\1/p' | tr '[:upper:]' '[:lower:]')
+          if [[ ! $scope =~ ^(major|minor|patch)$ ]]; then
+            scope="patch"
+          fi
+          echo "::set-output name=scope::$scope"
+      - name: Update package version
+        id: update_version
+        run: | 
+          npm version ${{ steps.extract_scope.outputs.scope }}
+          new_version=$(node -p "require('./package.json').version")
+          echo "::set-output name=new_version::$new_version"
+      - name: Update sonar-project.properties
+        run: |
+          awk -v new_version="${{ steps.update_version.outputs.new_version }}" '/^sonar.projectVersion/ { $0 = "sonar.projectVersion=" new_version } 1' sonar-project.properties > sonar-project.properties.tmp
+          mv sonar-project.properties.tmp sonar-project.properties
+          git add sonar-project.properties
+          git commit --amend --no-edit
+      - name: Push changes
+        run: git push origin HEAD
