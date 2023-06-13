@@ -17,6 +17,8 @@ jobs:
           # Install GitHub CLI
           sudo apt-get update
           sudo apt-get install gh -y
+          # Set GH_TOKEN environment variable
+          echo "GH_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
 
       - name: Config GIT actor name and email
         run: |
