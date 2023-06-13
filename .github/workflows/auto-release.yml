@@ -45,7 +45,7 @@ jobs:
           fi
 
       - name: Install GitHub CLI
-        if: ${{ steps.check-commit-type.outputs.EXIT = "true" }}
+        if: ${{ steps.check-commit-type.outputs.EXIT == 'true' }}
         run: |
           # Install GitHub CLI
           sudo apt-get update
@@ -55,7 +55,7 @@ jobs:
 
       - name: Update package version
         id: update-version
-        if: ${{ steps.check-commit-type.outputs.EXIT = "true" }}
+        if: ${{ steps.check-commit-type.outputs.EXIT == 'true' }}
         run: |
           npm version ${{ steps.extract-scope.outputs.CHANGE_SCOPE }}
           new_version=$(node -p "require('./package.json').version")
@@ -63,7 +63,7 @@ jobs:
           echo "::debug::New version: $new_version"
 
       - name: Update sonar-project.properties
-        if: ${{ steps.check-commit-type.outputs.EXIT = "true" }}
+        if: ${{ steps.check-commit-type.outputs.EXIT == 'true' }}
         run: |
           awk -v new_version="${{ steps.update-version.outputs.NEW_VERSION }}" '/^sonar.projectVersion/ { $0 = "sonar.projectVersion=" new_version } 1' sonar-project.properties > sonar-project.properties.tmp
           mv sonar-project.properties.tmp sonar-project.properties
@@ -71,7 +71,7 @@ jobs:
           git commit --amend --no-edit
 
       - name: Create new PR
-        if: ${{ steps.check-commit-type.outputs.EXIT = "true" }}
+        if: ${{ steps.check-commit-type.outputs.EXIT == 'true' }}
         run: |
           branch_name="update-version-${{ steps.update-version.outputs.NEW_VERSION }}-$(date +"%Y%m%d%H%M%S")"
           git checkout -b $branch_name
