@@ -24,7 +24,7 @@ jobs:
           if [[ ! change_scope =~ ^(major|minor|patch)$ ]]; then
             change_scope="patch"
           fi
-          echo "change_scope={{ $change_scope }}" >> $GITHUB_ENV
+          echo "change_scope=$change_scope" >> $GITHUB_ENV
           echo "::debug::Change scope: ${{ env.change_scope }}"
       - name: Update package version
         id: update_version
@@ -33,7 +33,7 @@ jobs:
           git config --global user.email "$GITHUB_ACTOR@users.noreply.github.com"
           npm version ${{ env.change_scope }}
           new_version=$(node -p "require('./package.json').version")
-          echo "new_version={{ $new_version }}" >> $GITHUB_ENV
+          echo "new_version=$new_version" >> $GITHUB_ENV
           echo "::debug::New version: ${{ env.new_version }}"
       - name: Update sonar-project.properties
         run: |
