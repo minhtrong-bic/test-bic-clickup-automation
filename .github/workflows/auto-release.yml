@@ -25,20 +25,20 @@ jobs:
             change_scope="patch"
           fi
           echo "change_scope=$change_scope" >> $GITHUB_ENV
-          echo "::debug::Change scope: $env.change_scope"
+          echo "::debug::Change scope: ${{ env.change_scope }}"
       - name: Update package version
         id: update_version
         run: |
           git config --global user.name $GITHUB_ACTOR
           git config --global user.email "$GITHUB_ACTOR@users.noreply.github.com"
-          npm version $env.change_scope
+          npm version ${{ env.change_scope }}
           new_version=$(node -p "require('./package.json').version")
           echo "new_version=$new_version" >> $GITHUB_ENV
-          echo "::debug::New version: $env.new_version"
+          echo "::debug::New version: ${{ env.new_version }}"
       - name: Update sonar-project.properties
         run: |
           echo 
-          awk -v new_version="$env.new_version" '/^sonar.projectVersion/ { $0 = "sonar.projectVersion=" new_version } 1' sonar-project.properties > sonar-project.properties.tmp
+          awk -v new_version="${{ env.new_version }}" '/^sonar.projectVersion/ { $0 = "sonar.projectVersion=" new_version } 1' sonar-project.properties > sonar-project.properties.tmp
           mv sonar-project.properties.tmp sonar-project.properties
           git add sonar-project.properties
           git commit --amend --no-edit
