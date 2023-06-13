@@ -1,7 +1,6 @@
 commit_message=$(git log --format=%B -n 1)
-echo $commit_message
-regex='(\S+)\(([^)]+)\)'
-if [[ commit_message =~ $regex ]]; then
+regex='([^[:space:]]+)\(([^)]+)\)'
+if [[ $commit_message =~ $regex ]]; then
   commit_type="${BASH_REMATCH[1]}"
   change_scope="${BASH_REMATCH[2]}"
   if [[ ! change_scope =~ ^(major|minor|patch)$ ]]; then
