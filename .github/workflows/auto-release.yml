@@ -47,7 +47,7 @@ jobs:
 
       - name: Check Commit Type
         run: |
-          if [[ "${{ env.commit_type }}" == "chore" ]]; then
+          if [[ "${{ env.commit_type }}" = "chore" ]]; then
             echo "Commit type is 'chore'.Stop the workflow."
             exit 1
           fi
