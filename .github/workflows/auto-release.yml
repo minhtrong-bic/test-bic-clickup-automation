@@ -15,9 +15,10 @@ jobs:
       - name: Install GitHub CLI
         run: |
           # Install GitHub CLI
-          brew install gh
+          sudo apt-get update
+          sudo apt-get install gh -y
 
-      - name: Config actor name and email
+      - name: Config GIT actor name and email
         run: |
           git config --global user.name $GITHUB_ACTOR
           git config --global user.email "$GITHUB_ACTOR@users.noreply.github.com"
