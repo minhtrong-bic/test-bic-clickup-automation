@@ -12,21 +12,13 @@ jobs:
       - name: Checkout Branch
         uses: actions/checkout@v3
 
-      - name: Install GitHub CLI
-        run: |
-          # Install GitHub CLI
-          sudo apt-get update
-          sudo apt-get install gh -y
-          # Set GH_TOKEN environment variable
-          echo "GH_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
-
       - name: Config GIT actor name and email
         run: |
           git config --global user.name $GITHUB_ACTOR
           git config --global user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
       - name: Extract Semantic Scope
-        id: extract_scope
+        id: extract-scope
         run: |
           commit_message=$(git log --format=%B -n 1)
           regex='(\S+)\(([^)]+)\)'
@@ -41,38 +33,50 @@ jobs:
             change_scope="patch"
           fi
           
-          echo "commit_type=commit_type" >> $GITHUB_ENV
-          echo "change_scope=$change_scope" >> $GITHUB_ENV
-          echo "::debug::Commit type: ${{ env.commit_type }}. Change scope: ${{ env.change_scope }}"
+          echo "COMMIT_TYPE=$commit_type" >> $GITHUB_OUTPUT
+          echo "CHANGE_SCOPE=$change_scope" >> $GITHUB_OUTPUT
+          echo "::debug::Commit type: $commit_type. Change scope: $change_scope"
 
       - name: Check Commit Type
+        id: check-commit-type
         run: |
-          if [[ "${{ env.commit_type }}" = "chore" ]]; then
-            echo "Commit type is 'chore'.Stop the workflow."
-            exit 1
+          if [[ "${{ steps.extract-scope.outputs.COMMIT_TYPE }}" = "chore" ]]; then
+            echo "EXIT=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Update package version
-        id: update_version
+      - name: Install GitHub CLI
+        if: ${{ steps.check-commit-type.outputs.EXIT = "true" }}
         run: |
-          npm version ${{ env.change_scope }}
+          # Install GitHub CLI
+          sudo apt-get update
+          sudo apt-get install gh -y
+          # Set GH_TOKEN environment variable
+          echo "GH_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
+
+      - name: Update package version
+        id: update-version
+        if: ${{ steps.check-commit-type.outputs.EXIT = "true" }}
+        run: |
+          npm version ${{ steps.extract-scope.outputs.CHANGE_SCOPE }}
           new_version=$(node -p "require('./package.json').version")
-          echo "new_version=$new_version" >> $GITHUB_ENV
-          echo "::debug::New version: ${{ env.new_version }}"
+          echo "NEW_VERSION=$new_version" >> $GITHUB_OUTPUT
+          echo "::debug::New version: $new_version"
 
       - name: Update sonar-project.properties
+        if: ${{ steps.check-commit-type.outputs.EXIT = "true" }}
         run: |
-          awk -v new_version="${{ env.new_version }}" '/^sonar.projectVersion/ { $0 = "sonar.projectVersion=" new_version } 1' sonar-project.properties > sonar-project.properties.tmp
+          awk -v new_version="${{ steps.update-version.outputs.NEW_VERSION }}" '/^sonar.projectVersion/ { $0 = "sonar.projectVersion=" new_version } 1' sonar-project.properties > sonar-project.properties.tmp
           mv sonar-project.properties.tmp sonar-project.properties
           git add sonar-project.properties
           git commit --amend --no-edit
 
       - name: Create new PR
+        if: ${{ steps.check-commit-type.outputs.EXIT = "true" }}
         run: |
-          branch_name="update-version-${{ env.new_version }}-$(date +"%Y%m%d-%H%M%S")"
+          branch_name="update-version-${{ steps.update-version.outputs.NEW_VERSION }}-$(date +"%Y%m%d%H%M%S")"
           git checkout -b $branch_name
           git push origin $branch_name
           # Create the pull request using GitHub CLI
-          gh pr create --title "Update version ${{ env.new_version }}" --base master --head $branch_name --body "This pull request is auto-generated." --label auto
+          gh pr create --title "Update version ${{ steps.update-version.outputs.NEW_VERSION }}" --base master --head $branch_name --body "This pull request is auto-generated." --label auto
           echo "Update PR created."
           
