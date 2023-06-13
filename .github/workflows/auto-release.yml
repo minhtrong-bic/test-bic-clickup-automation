@@ -11,36 +11,64 @@ jobs:
     steps:
       - name: Checkout Branch
         uses: actions/checkout@v3
-#      - name: Install NodeJs
-#        uses: actions/setup-node@v3
-#        with:
-#          node-version: '16.17.1'
-#          cache: 'npm'
-      - name: Extract Semantic Scope
-        id: extract_scope
+
+      - name: Install GitHub CLI
         run: |
-          commit_message="${{ github.event.pull_request.title }}"
-          change_scope=$(echo "$commit_message" | sed -n 's/.*(\(.*\)):.*$/\1/p' | tr '[:upper:]' '[:lower:]')
-          if [[ ! change_scope =~ ^(major|minor|patch)$ ]]; then
-            change_scope="patch"
-          fi
-          echo "change_scope=$change_scope" >> $GITHUB_ENV
-          echo "::debug::Change scope: ${{ env.change_scope }}"
-      - name: Update package version
-        id: update_version
+          # Install GitHub CLI
+          brew install gh
+
+      - name: Config actor name and email
         run: |
           git config --global user.name $GITHUB_ACTOR
           git config --global user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Extract Semantic Scope
+        id: extract_scope
+        run: |
+          commit_message=$(git log --format=%B -n 1)
+          regex='(\S+)\(([^)]+)\)'
+          if [[ $message =~ $regex ]]; then
+            commit_type="${BASH_REMATCH[1]}"
+            change_scope="${BASH_REMATCH[2]}"
+            if [[ ! change_scope =~ ^(major|minor|patch)$ ]]; then
+              change_scope="patch"
+            fi
+          else
+            commit_type="chore"
+            change_scope="patch"
+          fi
+          
+          echo "commit_type=commit_type" >> $GITHUB_ENV
+          echo "change_scope=$change_scope" >> $GITHUB_ENV
+          echo "::debug::Commit type: ${{ env.commit_type }}. Change scope: ${{ env.change_scope }}"
+
+      - name: Check Commit Type
+        run: |
+          if [[ "${{ env.commit_type }}" == "chore" ]]; then
+            echo "Commit type is 'chore'.Stop the workflow."
+            exit 1
+          fi
+
+      - name: Update package version
+        id: update_version
+        run: |
           npm version ${{ env.change_scope }}
           new_version=$(node -p "require('./package.json').version")
           echo "new_version=$new_version" >> $GITHUB_ENV
           echo "::debug::New version: ${{ env.new_version }}"
+
       - name: Update sonar-project.properties
         run: |
-          echo 
           awk -v new_version="${{ env.new_version }}" '/^sonar.projectVersion/ { $0 = "sonar.projectVersion=" new_version } 1' sonar-project.properties > sonar-project.properties.tmp
           mv sonar-project.properties.tmp sonar-project.properties
           git add sonar-project.properties
           git commit --amend --no-edit
-      - name: Push changes
-        run: git push origin HEAD
+
+      - name: Create new PR
+        run: |
+          git checkout -b update-version-${{ env.new_version }}
+          git push origin HEAD
+          # Create the pull request using GitHub CLI
+          gh pr create --title "Update version ${{ env.new_version }}" --base master --head update-version-${{ env.new_version }} --body "This pull request is auto-generated." --label auto
+          echo "Update PR created."
+          
