@@ -3,7 +3,8 @@ regex='([^[:space:]]+)\(([^)]+)\)'
 if [[ $commit_message =~ $regex ]]; then
   commit_type="${BASH_REMATCH[1]}"
   change_scope="${BASH_REMATCH[2]}"
-  if [[ ! change_scope =~ ^(major|minor|patch)$ ]]; then
+  echo $change_scope
+  if [[ ! $change_scope =~ ^(major|minor|patch)$ ]]; then
     change_scope="patch"
   fi
 else
