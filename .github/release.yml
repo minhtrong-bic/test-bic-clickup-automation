@@ -1,4 +1,4 @@
-
+# .github/release.yml
 changelog:
   exclude:
     labels:
@@ -17,3 +17,4 @@ changelog:
     - title: Other Changes
       labels:
         - "*"
+
